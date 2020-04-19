@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!-- https://covid-19-mexico-sigsamx.hub.arcgis.com/search?collection=Dataset -->
+  <!-- https://services.arcgis.com/CT0bYvH48f1TEH2t/arcgis/rest/services/Covid19/FeatureServer/0/query?outFields=*&where=1%3D1 -->
+  <!-- https://opendata.arcgis.com/datasets/976bec3b2d9a48d5a378ee396e23fd6f_0.geojson -->
+  <!-- https://developers.arcgis.com/rest/services-reference/query-feature-service-layer-.htm -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <!-- JavaScript -->
+  <script src="/alertifyjs/alertify.min.js"></script>
+  <!-- Default theme -->
+  <link rel="stylesheet" href="/alertifyjs/css/alertify.min.css"/>
+  <link rel="stylesheet" href="/alertifyjs/css/alertify.rtl.min.css"/>
+  <link rel="stylesheet" href="/alertifyjs/css/themes/default.min.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin="">
+  <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js" integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew==" crossorigin=""></script>
+  <style>
+    body {
+      margin: 0;
+    }
+
+    .icon-bar {
+      margin: 0;
+      padding: 0;
+      background-color: rgb(247, 245, 142);
+      height: 100%;
+      overflow: auto;
+    }
+
+    .icon-bar a {
+      display: block; /* Make the links appear below each other instead of side-by-side */
+      text-align: center; /* Center-align text */
+      padding: 16px; /* Add some padding */
+      transition: all 0.3s ease; /* Add transition for hover effects */
+      color: white; /* White text color */
+      font-size: 36px; /* Increased font-size */
+    }
+
+    .icon-bar a:hover {
+      background-color: #000; /* Add a hover color */
+    }
+
+    .active {
+      background-color: rgb(245, 129, 52); /* Add an active/current color */
+    }
+
+    .menuIcon {
+      display: inline-block;
+      cursor: pointer;
+    }
+
+    .bar1, .bar2, .bar3 {
+      width: 35px;
+      height: 5px;
+      background-color: #333;
+      margin: 6px 0;
+      transition: 0.4s;
+    }
+
+    .overlay {
+      /* Height & width depends on how you want to reveal the overlay (see JS below) */
+      height: 100%;
+      width: 0;
+      position: fixed; /* Stay in place */
+      z-index: 1; /* Sit on top */
+      left: 0;
+      top: 0;
+      background-color: rgb(255, 255, 255); /* Black fallback color */
+      overflow-x: hidden; /* Disable horizontal scroll */
+      transition: 0.5s; /* 0.5 second transition effect to slide in or slide down the overlay (height or width, depending on reveal) */
+    }
+
+    .overlay-content {
+      width: 100%; /* 100% width */
+      text-align: center; /* Centered text/links */
+    }
+
+    .overlay a {
+      padding: 8px;
+      text-decoration: none;
+      font-size: 36px;
+      color: #000000;
+      display: block; /* Display block instead of inline */
+      transition: 0.3s; /* Transition effects on hover (color) */
+    }
+
+    /* When you mouse over the navigation links, change their color */
+    .overlay a:hover, .overlay a:focus {
+      color: #f1f1f1;
+    }
+
+    /* Position the close button (top right corner) */
+    .overlay .closebtn {
+      font-size: 40px;
+      text-align: center;
+    }
+
+    /* When the height of the screen is less than 450 pixels, change the font-size of the links and position the close button again, so they don't overlap */
+    @media screen and (max-height: 450px) {
+      .overlay a {font-size: 20px}
+      .overlay .closebtn {
+        font-size: 40px;
+        top: 15px;
+        right: 35px;
+      }
+    }
+    .menubtn {
+      position: absolute;
+      padding: 10px 16px;
+    }
+    .navbar {
+      width: 100%;
+      background-color: #15bdad;
+      overflow: auto;
+      height: 60px;
+    }
+    .navbar a {
+      float: right;
+      padding: 19px 15px;
+      text-align: center;
+      color: white;
+      text-decoration: none;
+      font-size: 17px;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .navbar a:hover {
+      background-color: #000;
+    }
+    .testClass {
+      width: 195px;
+      height: 200px;
+      position: absolute;
+      top: 238px;
+      left: 93px;
+      border-style: solid;
+      border-width: 2px;
+      border-radius: 50px;
+      background-color: #eae59ad9;
+    }
+    .infoContent ul {
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .numberPercentOf {
+      color: blue;
+      font-size: 30px;
+    }
+    .alertify .ajs-dialog {
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .content { position: sticky; }
+    #mapid { height: 500px; }
+    .close-pop{
+      float: right;
+      padding: 6px 34px;
+    }
+    .last-places {
+      width: 200px; /* Set a width if you like */
+    }
+
+    .last-places a {
+      background-color: #eee; /* Grey background color */
+      color: black; /* Black text color */
+      display: block; /* Make the links appear below each other */
+      padding: 12px; /* Add some padding */
+      text-decoration: none; /* Remove underline from links */
+      font-size: 12px;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .last-places a:hover {
+      background-color: #ccc; /* Dark grey background on mouse-over */
+    }
+
+    .last-places a.active {
+      background-color: #4CAF50; /* Add a green color to the "active/current" link */
+      color: white;
+    }
+  </style>
+  <title>Pandemic R&C</title>
+</head>
+<body>
+  <div class="navbar">
+    <span onclick="openNav()" class="menubtn">
+      <div class="menuIcon">
+        <div class="bar1"></div>
+        <div class="bar2"></div>
+        <div class="bar3"></div>
+      </div>
+    </span>
+    <a href="#"><i class="fa fa-fw fa-search"></i>
+      <input type="text" name="place" id="searchBox">
+    </a>
+    <a href="#"><i class="fa fa-fw fa-envelope"></i> Contact</a>
+  </div>
+  <div id="myNav" class="overlay">
+    <div class="overlay-content">
+      <div class="icon-bar">
+        <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+        <a class="active" href="#"><i class="fa fa-home"></i></a>
+        <a href="#"><i class="fa fa-envelope"></i></a>
+        <a href="#"><i class="fa fa-globe"></i></a>
+        <a href="#"><i class="fa fa-bar-chart"></i></a>
+        <a href="javascript:void(0)" onclick="displayLastPlaces()"><i class="fa fa-calendar" aria-hidden="true"></i></a>
+        <a href="javascript:void(0)" onclick="displayHelp()"><i class="fa fa-question"></i></a>
+      </div>
+    </div>
+  </div>
+  <div class='overlay' id="lastPlaces">
+    <div class="last-places">
+      <a href="javascript:void(0)" class="close-places" onclick="closePlaces()">&times;</a>
+      <a href="javascript:void(0)">Ultimas ubicaciones </a>
+      <a href="javascript:void(0)"><i class="fa fa-map-pin"></i>2020-04-15 20:00:00</a>
+      <a href="javascript:void(0)"><i class="fa fa-map-pin"></i>2020-04-15 14:00:00</a>
+      <a href="javascript:void(0)""><i class="fa fa-map-pin"></i>2020-04-14 12:00:00</a>
+      <a href="javascript:void(0)"><i class="fa fa-map-pin"></i>2020-04-13 16:00:00</a>
+      <a href="javascript:void(0)"><i class="fa fa-map-pin"></i>2020-04-13 09:00:00</a>
+    </div>
+  </div>
+  <div class="content">
+    <div id="mapid"></div>
+    <!-- <iframe style="width:100%"; height="720" src="https://coronavirus.app/map?embed=true" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe> -->
+  </div>
+  <div class="testClass" style="display:none;">
+    <a href="javascript:void(0)" class="close-pop" onclick="closePop()">&times;</a>
+    <div class="infoContent">
+      <ul>
+        <li>Lugar: Aguascalientes</li>
+        <li>Contagios: 1</li>
+        <li>Probabilidad de contagio estimado: <div class="numberPercentOf">Baja</div></li>
+      </ul>
+    </div>
+  </div>
+  <script src="/_js/main.js"></script>
+  <script>
+    function openNav() {
+      document.getElementById("myNav").style.width = "25%";
+    }
+
+    /* Close when someone clicks on the "x" symbol inside the overlay */
+    function closeNav() {
+      document.getElementById("myNav").style.width = "0%";
+    }
+
+    function displayHelp() {
+      alertify.alert("Para informarte tu probabilidad de contraer COVID-19 por favor activa tu ubicacion", () => {
+        alertify.message('OK');
+      });
+    }
+
+    function closePop() {
+      document.querySelector('.testClass').style = "display: none;";
+    }
+
+    document.onreadystatechange = function () {
+      if (document.readyState == 'complete') {
+        document.getElementById('mapid').style.height = `${window.innerHeight}px`;
+        let myMap = L.map('mapid').setView([25.685, -100.319], 13);
+        L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoiYmV0b3JvY2EiLCJhIjoiY2s5NnBleWJvMG1zazNtbXUyMGpia3FvNSJ9.694K8rik5-7Is3k0IfR0GA', {
+          attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+          maxZoom: 18,
+          id: 'mapbox/streets-v11',
+          tileSize: 512,
+          zoomOffset: -1,
+          accessToken: 'pk.eyJ1IjoiYmV0b3JvY2EiLCJhIjoiY2s5NnBleWJvMG1zazNtbXUyMGpia3FvNSJ9.694K8rik5-7Is3k0IfR0GA'
+        }).addTo(myMap);
+        window.onresize = function (event) {
+          document.getElementById('mapid').style.height = `${window.innerHeight}px`;
+        };
+        createMarker(myMap);
+        getInfo(myMap);
+      }
+    }
+  </script>
+</body>
+</html>
