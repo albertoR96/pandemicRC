@@ -1,7 +1,7 @@
 # pandemicRC
 Demo para HackTechCovid19
 
-## Librrias externas y APIs
+## Librerias externas y APIs
 Mapas gratuitos
 leafletjs.com
 
